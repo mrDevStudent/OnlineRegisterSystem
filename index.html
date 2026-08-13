@@ -279,6 +279,71 @@ function esc(s){
 }
 function fmtMoney(n){ return '₱' + Number(n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
 
+/* ===================== CSV EXPORT ===================== */
+function toCSVValue(v){
+  if(v==null) return '';
+  if(Array.isArray(v)) v = v.join('; ');
+  v = String(v);
+  if(/[",\n]/.test(v)) v = '"' + v.replace(/"/g,'""') + '"';
+  return v;
+}
+function exportCSV(filename, rows, columns){
+  // columns: [{key:'studentId', label:'Student ID'}, ...]
+  if(!rows || rows.length===0){ alert('No data to export yet.'); return; }
+  const header = columns.map(c=>toCSVValue(c.label)).join(',');
+  const lines = rows.map(r=> columns.map(c=> toCSVValue(typeof c.get==='function'? c.get(r) : r[c.key])).join(','));
+  const csv = [header, ...lines].join('\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function exportStudentsCSV(){
+  exportCSV('myclient-students.csv', db.students, [
+    {key:'studentId', label:'Student ID'},
+    {key:'name', label:'Name'},
+    {key:'email', label:'Email'},
+    {key:'contact', label:'Contact'},
+    {key:'program', label:'Program'},
+    {key:'subjects', label:'Subjects'},
+    {key:'balance', label:'Balance'},
+    {key:'hasAccount', label:'Has Account'}
+  ]);
+}
+function exportAdmissionsCSV(){
+  exportCSV('myclient-admissions.csv', db.admissions, [
+    {key:'admRef', label:'Admission Ref'},
+    {key:'name', label:'Name'},
+    {key:'email', label:'Email'},
+    {key:'contact', label:'Contact'},
+    {key:'program', label:'Program'},
+    {key:'status', label:'Status'}
+  ]);
+}
+function exportEnrollmentRequestsCSV(){
+  exportCSV('myclient-enrollment-requests.csv', db.enrollmentRequests, [
+    {key:'id', label:'Request ID'},
+    {key:'studentId', label:'Student ID'},
+    {key:'subjects', label:'Subjects'},
+    {key:'status', label:'Status'},
+    {key:'dateSubmitted', label:'Date Submitted'}
+  ]);
+}
+function exportAccountsCSV(){
+  // Passwords intentionally excluded from export for basic safety.
+  exportCSV('myclient-accounts.csv', db.accounts, [
+    {key:'username', label:'Username'},
+    {key:'role', label:'Role'},
+    {key:'displayName', label:'Display Name'},
+    {key:'studentId', label:'Student ID'}
+  ]);
+}
+
 /* ===================== NAV ===================== */
 function nav(page, extra){
   route = Object.assign({page:page}, extra||{});
@@ -699,6 +764,17 @@ function pageAdminReports(){
   db.students.forEach(s=>s.subjects.forEach(c=>{perSubject[c]=(perSubject[c]||0)+1;}));
   return `
   ${crumb('Admin Dashboard','admin')}
+  <div class="card">
+    <div class="eyebrow">Export Data</div>
+    <h2>Download as CSV</h2>
+    <p class="help">Opens directly in Google Sheets, Excel, or Numbers.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;">
+      <button class="btn outline" onclick="exportStudentsCSV()">Students</button>
+      <button class="btn outline" onclick="exportAdmissionsCSV()">Admissions</button>
+      <button class="btn outline" onclick="exportEnrollmentRequestsCSV()">Enrollment Requests</button>
+      <button class="btn outline" onclick="exportAccountsCSV()">Accounts</button>
+    </div>
+  </div>
   <div class="card">
     <div class="eyebrow">Reports</div>
     <h2>Class List & Enrollment Statistics</h2>
