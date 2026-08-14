@@ -108,8 +108,8 @@ main{padding-top:28px;}
 .btn.danger{background:var(--rose);border-color:var(--rose);color:#fff;}
 .btn.danger:hover{opacity:.9;}
 .btn.small{width:auto;padding:8px 14px;font-size:13px;margin-bottom:0;}
-.btn.block-row{display:flex;gap:10px;}
-.btn.block-row .btn{margin-bottom:0;}
+.block-row{display:flex;gap:10px;}
+.block-row .btn{margin-bottom:0;}
 
 /* ---- forms ---- */
 label{display:block;font-size:12.5px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);margin:14px 0 6px;}
@@ -278,71 +278,6 @@ function esc(s){
   return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 function fmtMoney(n){ return '₱' + Number(n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
-
-/* ===================== CSV EXPORT ===================== */
-function toCSVValue(v){
-  if(v==null) return '';
-  if(Array.isArray(v)) v = v.join('; ');
-  v = String(v);
-  if(/[",\n]/.test(v)) v = '"' + v.replace(/"/g,'""') + '"';
-  return v;
-}
-function exportCSV(filename, rows, columns){
-  // columns: [{key:'studentId', label:'Student ID'}, ...]
-  if(!rows || rows.length===0){ alert('No data to export yet.'); return; }
-  const header = columns.map(c=>toCSVValue(c.label)).join(',');
-  const lines = rows.map(r=> columns.map(c=> toCSVValue(typeof c.get==='function'? c.get(r) : r[c.key])).join(','));
-  const csv = [header, ...lines].join('\n');
-  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-function exportStudentsCSV(){
-  exportCSV('myclient-students.csv', db.students, [
-    {key:'studentId', label:'Student ID'},
-    {key:'name', label:'Name'},
-    {key:'email', label:'Email'},
-    {key:'contact', label:'Contact'},
-    {key:'program', label:'Program'},
-    {key:'subjects', label:'Subjects'},
-    {key:'balance', label:'Balance'},
-    {key:'hasAccount', label:'Has Account'}
-  ]);
-}
-function exportAdmissionsCSV(){
-  exportCSV('myclient-admissions.csv', db.admissions, [
-    {key:'admRef', label:'Admission Ref'},
-    {key:'name', label:'Name'},
-    {key:'email', label:'Email'},
-    {key:'contact', label:'Contact'},
-    {key:'program', label:'Program'},
-    {key:'status', label:'Status'}
-  ]);
-}
-function exportEnrollmentRequestsCSV(){
-  exportCSV('myclient-enrollment-requests.csv', db.enrollmentRequests, [
-    {key:'id', label:'Request ID'},
-    {key:'studentId', label:'Student ID'},
-    {key:'subjects', label:'Subjects'},
-    {key:'status', label:'Status'},
-    {key:'dateSubmitted', label:'Date Submitted'}
-  ]);
-}
-function exportAccountsCSV(){
-  // Passwords intentionally excluded from export for basic safety.
-  exportCSV('myclient-accounts.csv', db.accounts, [
-    {key:'username', label:'Username'},
-    {key:'role', label:'Role'},
-    {key:'displayName', label:'Display Name'},
-    {key:'studentId', label:'Student ID'}
-  ]);
-}
 
 /* ===================== NAV ===================== */
 function nav(page, extra){
@@ -535,7 +470,7 @@ function renderConfirmAdmission(){
         <div class="row"><span>Guardian</span><span>${esc(d.guardian)}</span></div>
         <div class="row"><span>Program</span><span>${esc(d.program)}</span></div>
       </div>
-      <div class="btn block-row">
+      <div class="block-row">
         <button class="btn outline" onclick="nav('admission')">No, Edit</button>
         <button class="btn gold" onclick="confirmAdmissionYes()">Yes, Confirm</button>
       </div>
@@ -582,7 +517,7 @@ function pageConfirmLogout(who){
     <div class="eyebrow">Log Out</div>
     <h2>Confirm Logout?</h2>
     <p class="sub">You'll need your username and password to sign back in.</p>
-    <div class="btn block-row">
+    <div class="block-row">
       <button class="btn outline" onclick="nav('${who}')">No, Stay</button>
       <button class="btn danger" onclick="doLogout()">Yes, Log Out</button>
     </div>
@@ -765,17 +700,6 @@ function pageAdminReports(){
   return `
   ${crumb('Admin Dashboard','admin')}
   <div class="card">
-    <div class="eyebrow">Export Data</div>
-    <h2>Download as CSV</h2>
-    <p class="help">Opens directly in Google Sheets, Excel, or Numbers.</p>
-    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;">
-      <button class="btn outline" onclick="exportStudentsCSV()">Students</button>
-      <button class="btn outline" onclick="exportAdmissionsCSV()">Admissions</button>
-      <button class="btn outline" onclick="exportEnrollmentRequestsCSV()">Enrollment Requests</button>
-      <button class="btn outline" onclick="exportAccountsCSV()">Accounts</button>
-    </div>
-  </div>
-  <div class="card">
     <div class="eyebrow">Reports</div>
     <h2>Class List & Enrollment Statistics</h2>
     ${Object.keys(perSubject).length===0? '<p class="help">No enrollment data yet.</p>' :
@@ -876,7 +800,7 @@ function pageAdminEnrollment(){
         return `<div class="divider"></div>
         <div style="font-weight:700;">${esc(s?s.name:r.studentId)}</div>
         <div class="help">${r.subjects.join(', ')}</div>
-        <div class="btn block-row" style="margin-top:8px;">
+        <div class="block-row" style="margin-top:8px;">
           <button class="btn outline small" onclick="processEnrollment(${r.id},false)">Decline</button>
           <button class="btn gold small" onclick="processEnrollment(${r.id},true)">Accept</button>
         </div>`;
